@@ -1,29 +1,27 @@
 public class CheckEverydaytask_Manoj implements Queueable {
     public void execute(QueueableContext context) {
-        List<compliancequest__SQX_Part__c> partList = [Select Id, compliancequest_SQX_Product__c, compliancequest__Active__c 
-                                                       From compliancequest__SQX_Part__c];
-        List<Product2> proList = [Select Id, (Select Id, compliancequest__Active__c ,compliancequest_SQX_Product__c 
-                                              From compliancequest__SQX_Parts__r) From Product2];
-        List<Product2> newProductList = new List<Product2>();
-        for (compliancequest__SQX_Part__c pr: partList){
-            if(pr.compliancequest__Active__c == True && pr.compliancequest_SQX_Product__c == Null){
-                Product2 pro = new Product2();
-                pro.Name = pr.Name;
-                pro.ProductCode = pr.compliancequest__Part_Number__c;
-                pro.IsActive = True;
-                newProductList.add(pro);
-            }
+        List<compliancequest__SQX_Part__c> parts = [SELECT Id, Name, compliancequest__Active__c, compliancequest__Part_Number__c, compliancequest_SQX_Product__c FROM compliancequest__SQX_Part__c WHERE compliancequest__Active__c = true];
+        List<Product2> productsToInsert = new List<Product2>();
+        Map<String, Product2> existingProducts = new Map<String, Product2>();
+        for(Product2 product : [SELECT Id, Name, ProductCode, IsActive FROM Product2 WHERE IsActive = true]){
+            existingProducts.put(product.ProductCode, product);
         }
-        if(!newProductList.isEmpty()){
-            insert newProductList;
-        }
-        for(Product2 prd: proList){
-            for(compliancequest__SQX_Part__c part : prd.compliancequest__SQX_Parts__r){
-                if(prd.ProductCode == part.compliancequest__Part_Number__c){
-                    part.compliancequest_SQX_Product__c = prd.Id;
+        for(compliancequest__SQX_Part__c part : parts){
+            if(part.compliancequest_SQX_Product__c == null){
+                if(existingProducts.containsKey(part.compliancequest__Part_Number__c)){
+                    part.compliancequest_SQX_Product__c = existingProducts.get(part.compliancequest__Part_Number__c).Id;
+                } else {
+                    Product2 newProduct = new Product2();
+                    newProduct.Name = part.Name;
+                    newProduct.ProductCode = part.compliancequest__Part_Number__c;
+                    newProduct.IsActive = true;
+                    productsToInsert.add(newProduct);
                 }
             }
         }
-        update proList;
+        if(!productsToInsert.isEmpty()){
+            insert productsToInsert;
+        }
+        update parts;
     }
 }

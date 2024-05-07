@@ -7,12 +7,11 @@ public class ScheduleDailyTask_Manoj implements Schedulable{
             userIds.add(a.AssigneeId);
         }
         List<User> usList = [SELECT Id, Profile.Name FROM User WHERE Profile.Name = 'System Administrator' And Id IN :userIds];
-        for(User ur: usList){
+        if(!usList.isEmpty()){
             system.enqueueJob(new CheckEverydaytask_Manoj());
         }   
     }
 }
-
 
 /*
 ScheduleDailyTask_Manoj dailyRun = new ScheduleDailyTask_Manoj();
